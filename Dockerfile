@@ -30,6 +30,11 @@ COPY . .
 
 RUN npm run build
 
+# Drop dev-only dependencies (vitest, eslint, tsx, typescript, supertest, ...) so they
+# are not carried into the runtime image by the `COPY --from=build node_modules` below.
+# The runtime only runs the compiled dist and needs the production dependencies.
+RUN npm prune --omit=dev
+
 FROM ubuntu:24.04
 
 RUN apt-get update \
