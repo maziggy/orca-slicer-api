@@ -3,6 +3,8 @@ import swaggerUi from "swagger-ui-express";
 import { errorHandler } from "./middleware/error";
 import health from "./routes/health/route";
 import profiles from "./routes/profiles/route";
+import schema from "./routes/schema/route";
+import { getSchema } from "./routes/schema/schema.service";
 import asyncSlicing from "./routes/slicing/async.route";
 import slicing from "./routes/slicing/route";
 import cors from "cors";
@@ -31,6 +33,7 @@ export const configureApp = () => {
 
   app.use("/health", health);
   app.use("/profiles", profiles);
+  app.use("/schema", schema);
   app.use("/slice", slicing);
   app.use("/slice-async", asyncSlicing);
 
@@ -59,4 +62,10 @@ if (process.env.NODE_ENV !== "production") {
 
 app.listen(port, () => {
   console.log(`App listening on port ${port}`);
+  // Warm the schema cache so the first /schema call doesn't pay the ~seconds
+  // the slicer takes to boot and dump its settings. Failure is logged, not
+  // fatal — /schema retries the load on the next request.
+  getSchema()
+    .then((s) => console.log(`Slicer schema: ${s.slicer}-${s.version}, ${s.keys.length} keys`))
+    .catch((err) => console.warn(`Slicer schema unavailable: ${err.message}`));
 });
