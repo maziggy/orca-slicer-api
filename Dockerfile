@@ -9,17 +9,15 @@ WORKDIR /app
 # AMD64: Use official AppImage from SoftFever/OrcaSlicer
 # ARM64: Use custom-built AppImage from kldzj/orca-slicer-arm64
 # set -e: a failed download or extraction stops this step instead of
-# surfacing later as missing presets. curl -f: an HTTP error page (GitHub
-# answers 504 at times) is an error, not a file saved as the AppImage.
+# surfacing later as missing presets. The download goes through the GitHub
+# API (see the script): the release page link answers 504 at times.
+COPY scripts/fetch-release-asset.sh /tmp/
 RUN set -e; \
 	if [ "$TARGETARCH" = "arm64" ]; then \
-	echo "Downloading ARM64 AppImage from kldzj/orca-slicer-arm64..."; \
-	URL="https://github.com/kldzj/orca-slicer-arm64/releases/download/v${ORCA_VERSION}-arm64/OrcaSlicer-${ORCA_VERSION}-arm64-linux.AppImage"; \
+	/tmp/fetch-release-asset.sh kldzj/orca-slicer-arm64 "v${ORCA_VERSION}-arm64" "^OrcaSlicer-${ORCA_VERSION}-arm64-linux\.AppImage$" orca.AppImage; \
 	else \
-	echo "Downloading AMD64 AppImage from SoftFever/OrcaSlicer..."; \
-	URL="https://github.com/SoftFever/OrcaSlicer/releases/download/v${ORCA_VERSION}/OrcaSlicer_Linux_AppImage_Ubuntu2404_V${ORCA_VERSION}.AppImage"; \
+	/tmp/fetch-release-asset.sh SoftFever/OrcaSlicer "v${ORCA_VERSION}" "^OrcaSlicer_Linux_AppImage_Ubuntu2404_V${ORCA_VERSION}\.AppImage$" orca.AppImage; \
 	fi; \
-	curl -fL --retry 5 --retry-all-errors --retry-delay 10 -o orca.AppImage "$URL"; \
 	chmod +x orca.AppImage; \
 	./orca.AppImage --appimage-extract > /dev/null; \
 	rm orca.AppImage; \
