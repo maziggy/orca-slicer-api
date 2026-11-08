@@ -32,16 +32,24 @@ ARG TARGETARCH
 WORKDIR /app
 
 # set -e: a failed download or extraction stops this step instead of
-# surfacing later as a missing slicer. The download goes through the GitHub
-# API (see the script): the release page link answers 504 at times.
-COPY scripts/fetch-release-asset.sh /tmp/
+# surfacing later as a missing slicer. GitHub's release downloads answer
+# 504 at times, for minutes; the retries ride that out.
 RUN set -e; \
     if [ "$TARGETARCH" = "arm64" ]; then \
         echo "ARM64 not supported — BambuStudio has no official ARM64 AppImage."; \
         exit 1; \
     fi; \
-    /tmp/fetch-release-asset.sh bambulab/BambuStudio "v${BAMBU_VERSION}" \
-        'BambuStudio_ubu(ntu)?-?22(\.04)?[-_][^/]*\.AppImage$' bambu.AppImage; \
+    echo "Resolving BambuStudio v${BAMBU_VERSION} Ubuntu 22.04 AppImage URL..."; \
+    BAMBU_URL=$(curl -fsSL --retry 10 --retry-all-errors --retry-delay 30 "https://api.github.com/repos/bambulab/BambuStudio/releases/tags/v${BAMBU_VERSION}" \
+        | grep -oE 'https://[^"]*BambuStudio_ubu(ntu)?-?22(\.04)?[-_][^"]*\.AppImage' \
+        | head -1); \
+    if [ -z "$BAMBU_URL" ]; then \
+        echo "ERROR: No Ubuntu 22.04 AppImage asset found in BambuStudio v${BAMBU_VERSION}." >&2; \
+        echo "Check that the release exists and ships the ubuntu-22.04 variant." >&2; \
+        exit 1; \
+    fi; \
+    echo "Downloading $BAMBU_URL"; \
+    curl -fL --retry 10 --retry-all-errors --retry-delay 30 -o bambu.AppImage "$BAMBU_URL"; \
     chmod +x bambu.AppImage; \
     ./bambu.AppImage --appimage-extract > /dev/null; \
     rm bambu.AppImage; \
