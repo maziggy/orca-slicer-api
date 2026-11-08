@@ -14,6 +14,7 @@ import {
   ensureProfileType,
   getDefaultBundledProfilesPath,
   acceptPrinterParent,
+  cliPrinterPreset,
   normalizeFromField,
   printerIdentity,
   resolveProfile,
@@ -701,7 +702,8 @@ async function materializeProfile(
 
   const outPath = path.join(args.inputDir, args.filename);
   try {
-    await fs.writeFile(outPath, JSON.stringify(profile));
+    const forCli = args.category === "machine" ? cliPrinterPreset(profile) : profile;
+    await fs.writeFile(outPath, JSON.stringify(forCli));
   } catch (err) {
     throw new AppError(
       500,

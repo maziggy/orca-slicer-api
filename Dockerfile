@@ -1,6 +1,6 @@
 FROM node:22-bookworm AS build
 
-ARG ORCA_VERSION=2.4.2
+ARG ORCA_VERSION=2.5.0
 ARG TARGETARCH
 
 WORKDIR /app
@@ -21,6 +21,11 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 	./orca.AppImage --appimage-extract; \
 	rm orca.AppImage; \
 	fi
+
+# The profile resolver's JSON tree (OrcaSlicer 2.5.0+ ships binary preset
+# caches only; see the script).
+COPY scripts/fetch-bundled-profiles.sh /tmp/
+RUN /tmp/fetch-bundled-profiles.sh /app/squashfs-root "${ORCA_VERSION}" /app/bundled-profiles
 
 COPY package*.json ./
 
@@ -54,9 +59,11 @@ RUN apt-get update \
 COPY --from=build /app/dist/src /app/dist
 COPY --from=build /app/node_modules /app/node_modules
 COPY --from=build /app/squashfs-root /app/squashfs-root
+COPY --from=build /app/bundled-profiles /app/bundled-profiles
 
 ENV PORT=3000
 ENV ORCASLICER_PATH=/app/squashfs-root/AppRun
+ENV BUNDLED_PROFILES_PATH=/app/bundled-profiles/BBL
 ENV DATA_PATH=/app/data
 ENV NODE_ENV=production
 # Which slicer this image wraps. The wrapper itself is slicer-agnostic;

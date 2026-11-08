@@ -6,7 +6,7 @@
 # accepts identically). Only the bundled AppImage differs.
 #
 # Build:
-#   docker build -f Dockerfile.bambu-studio --build-arg BAMBU_VERSION=02.08.02.61 \
+#   docker build -f Dockerfile.bambu-studio --build-arg BAMBU_VERSION=02.09.01.70 \
 #                -t ghcr.io/maziggy/bambu-studio-api:latest .
 #
 # AMD64 only — BambuStudio doesn't publish an official ARM64 AppImage.
@@ -18,14 +18,15 @@
 # webkit2gtk-4.0, the API BambuStudio links against; 24.04 only has 4.1.
 #
 # The Ubuntu AppImage filename embeds an opaque build timestamp
-# (e.g. `BambuStudio_ubuntu22.04-v02.08.02.61-20260820225108.AppImage`)
+# (e.g. `BambuStudio_ubu22_v02.09.01.70-20261103183404.AppImage`; before
+# 02.09 the prefix was `BambuStudio_ubuntu-22.04-` / `BambuStudio_ubuntu22.04-`)
 # that can't be derived from BAMBU_VERSION alone, so we resolve the asset
 # URL at build time via the GitHub releases API. One unauthenticated call
 # per build; the public rate limit (60/hr per IP) is fine in practice.
 
 FROM node:22-bookworm AS build
 
-ARG BAMBU_VERSION=02.08.02.61
+ARG BAMBU_VERSION=02.09.01.70
 ARG TARGETARCH
 
 WORKDIR /app
@@ -36,7 +37,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     fi; \
     echo "Resolving BambuStudio v${BAMBU_VERSION} Ubuntu 22.04 AppImage URL..."; \
     BAMBU_URL=$(curl -fsSL "https://api.github.com/repos/bambulab/BambuStudio/releases/tags/v${BAMBU_VERSION}" \
-        | grep -oE 'https://[^"]*BambuStudio_ubuntu-?22\.04[^"]*\.AppImage' \
+        | grep -oE 'https://[^"]*BambuStudio_ubu(ntu)?-?22(\.04)?[-_][^"]*\.AppImage' \
         | head -1); \
     if [ -z "$BAMBU_URL" ]; then \
         echo "ERROR: No Ubuntu 22.04 AppImage asset found in BambuStudio v${BAMBU_VERSION}." >&2; \

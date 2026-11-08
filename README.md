@@ -50,7 +50,7 @@ If you want to build the image locally instead use:
 ```bash
 git clone https://github.com/AFKFelix/orca-slicer-api.git
 cd orca-slicer-api
-docker build --build-arg ORCA_VERSION=2.4.2 -t orca-slicer-api .
+docker build --build-arg ORCA_VERSION=2.5.0 -t orca-slicer-api .
 docker run -d -p 3000:3000 --name orca-slicer-api orca-slicer-api
 ```
 
@@ -82,7 +82,7 @@ curl http://localhost:3001/health
 `Dockerfile.bambu-studio` reuses the same Node wrapper as the OrcaSlicer
 image — BambuStudio's CLI accepts the same `--load-settings` / `--slice`
 flags, so only the bundled AppImage and a few env vars differ. Pin the
-BambuStudio version with `BAMBU_VERSION=02.08.02.61 docker compose ...`
+BambuStudio version with `BAMBU_VERSION=02.09.01.70 docker compose ...`
 (Ubuntu 22.04 AppImage variant — Fedora was dropped upstream after v02.06.x).
 
 > **Slicing Bambu-authored 3MFs?** OrcaSlicer still has known CLI bugs
@@ -120,7 +120,7 @@ npm run dev
 `NODE_ENV` (required): Sets if run in development or production.\
 `PORT` (optional): Port to run the server on, defaults to 3000.\
 `ASYNC_SLICE_RETENTION_MS` (optional): Time in milliseconds to retain asynchronous slice jobs, defaults to 3600000 (60 minutes). Cleanup runs every 60 minutes.\
-`BUNDLED_PROFILES_PATH` (optional): Absolute path to the bundled OrcaSlicer profiles directory (e.g. `<orca>/resources/profiles/BBL`). When unset the path is derived from `ORCASLICER_PATH` (`<dirname(ORCASLICER_PATH)>/resources/profiles/BBL`). Required for profile inheritance resolution — see below.
+`BUNDLED_PROFILES_PATH` (optional): Absolute path to the bundled OrcaSlicer profiles directory (e.g. `<orca>/resources/profiles/BBL`). When unset the path is derived from `ORCASLICER_PATH` (`<dirname(ORCASLICER_PATH)>/resources/profiles/BBL`). Required for profile inheritance resolution — see below. OrcaSlicer 2.5.0 and later ship their bundled profiles as binary preset caches (`resources/profiles/<vendor>.opc`) with no JSON, so a custom deployment of those versions must point this at a JSON tree from the same release's source tag (`resources/profiles/BBL`, with `BBL.json`, `OrcaFilamentLibrary.json` and `OrcaFilamentLibrary/` beside it). The Docker images do this at build time with `scripts/fetch-bundled-profiles.sh`.
 
 Profiles are stored under:
 

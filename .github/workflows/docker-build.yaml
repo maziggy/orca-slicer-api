@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        orca_version: ['2.4.2']
+        orca_version: ['2.5.0']
         platform:
           - runner: ubuntu-latest
             arch: amd64
@@ -141,7 +141,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        orca_version: ['2.4.2']
+        orca_version: ['2.5.0']
     
     steps:
       - name: Log in to GitHub Container Registry

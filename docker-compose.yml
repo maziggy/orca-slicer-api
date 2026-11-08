@@ -36,8 +36,8 @@ services:
     build:
       context: .
       args:
-        ORCA_VERSION: "${ORCA_VERSION:-2.4.2}"
-    image: orca-slicer-api:resolver-orca${ORCA_VERSION:-2.4.2}
+        ORCA_VERSION: "${ORCA_VERSION:-2.5.0}"
+    image: orca-slicer-api:resolver-orca${ORCA_VERSION:-2.5.0}
     container_name: orca-slicer-api
     restart: unless-stopped
     ports:
@@ -68,8 +68,8 @@ services:
       context: .
       dockerfile: Dockerfile.bambu-studio
       args:
-        BAMBU_VERSION: "${BAMBU_VERSION:-02.08.02.61}"
-    image: bambu-studio-api:bambu${BAMBU_VERSION:-02.08.02.61}
+        BAMBU_VERSION: "${BAMBU_VERSION:-02.09.01.70}"
+    image: bambu-studio-api:bambu${BAMBU_VERSION:-02.09.01.70}
     container_name: bambu-studio-api
     restart: unless-stopped
     ports:

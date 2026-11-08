@@ -196,9 +196,9 @@ export async function resolveProfile(
 // (bambuddy#3250). The "# " strip above only covered the GUI's default name.
 //
 // Marking it as the user preset it is, with `inherits` naming the bundled
-// preset it was saved from, makes the CLI check that name instead. The
-// settings stay flattened: the CLI reads `inherits` only for this check and
-// never loads the parent, so the preset's own start G-code is what runs.
+// preset it was saved from, records the system name it must be checked
+// against. The settings stay flattened, so the preset's own start G-code is
+// what runs. What reaches the CLI is cliPrinterPreset's copy, not this.
 function keepSystemParent(
   profile: ProfileJson,
   systemParent: string | undefined,
@@ -231,6 +231,27 @@ export function printerIdentity(printer: ProfileJson): PrinterIdentity | null {
     return { name: printer.name, systemName: printer.inherits };
   }
   return null;
+}
+
+// The file the CLI gets for a printer preset keepSystemParent marked. Up to
+// OrcaSlicer 2.4 the CLI read `inherits` only for the compatibility check, so
+// the marked preset could go as it is. OrcaSlicer 2.5.0 resolves `inherits`
+// of a user preset for real, and only for a preset file installed in its
+// data folder: a standalone file fails with "can not resolve preset ...
+// Preset was not found in the loaded bundle" (OrcaSlicer #15438). The
+// settings are flattened already, so the CLI gets the system preset it is
+// checked as: the parent's name, "system", no `inherits`. The CLI then checks
+// the parent's name, loads nothing, and runs the preset's own settings, on
+// every slicer version. The sliced file names the parent as its printer
+// preset.
+export function cliPrinterPreset(printer: ProfileJson): ProfileJson {
+  const identity = printerIdentity(printer);
+  if (!identity) {
+    return printer;
+  }
+  const preset: ProfileJson = { ...printer, name: identity.systemName, from: "system" };
+  delete preset.inherits;
+  return preset;
 }
 
 // The GUI counts a process or filament as fitting a user printer when its

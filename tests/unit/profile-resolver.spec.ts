@@ -4,6 +4,7 @@ import * as os from "os";
 import * as path from "path";
 import {
   acceptPrinterParent,
+  cliPrinterPreset,
   ensureProfileType,
   printerIdentity,
   mergeProfiles,
@@ -324,6 +325,28 @@ describe("resolveProfile", () => {
       });
       expect(result.inherits).toBeUndefined();
       expect(result.from).toBe("system");
+    });
+
+    it("reaches the CLI as the system preset it is checked as (OrcaSlicer 2.5.0)", async () => {
+      const marked = await resolveProfile({ ...renamed }, "machine", {
+        bundledProfilesPath,
+        keepSystemParent: true,
+      });
+      const forCli = cliPrinterPreset(marked);
+      // 2.5.0 rejects a standalone user preset with `inherits`.
+      expect(forCli.inherits).toBeUndefined();
+      expect(forCli.from).toBe("system");
+      expect(forCli.name).toBe("Bambu Lab X1 Carbon 0.4 nozzle");
+      // The user's own settings, flattened.
+      expect(forCli.machine_start_gcode).toBe(";MINE");
+      expect(forCli.layer_change_gcode).toBe(";LAYER_CHANGE");
+      // The marked preset keeps its identity for acceptPrinterParent.
+      expect(printerIdentity(marked)?.name).toBe("Bambu Lab X1 Carbon 0.4 nozzle - Skew");
+    });
+
+    it("leaves a preset that is its own system preset alone", () => {
+      const system: ProfileJson = { type: "machine", name: "Bambu Lab X1 Carbon 0.4 nozzle", from: "system" };
+      expect(cliPrinterPreset(system)).toBe(system);
     });
   });
 

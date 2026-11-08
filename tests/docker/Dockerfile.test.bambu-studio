@@ -9,7 +9,7 @@
 #
 # Build:
 #   docker build -f tests/docker/Dockerfile.test.bambu-studio \
-#                --build-arg BAMBU_VERSION=02.08.02.61 \
+#                --build-arg BAMBU_VERSION=02.09.01.70 \
 #                -t bambu-studio-api-test .
 #   docker run --rm bambu-studio-api-test
 #
@@ -19,7 +19,7 @@
 
 FROM ubuntu:22.04
 
-ARG BAMBU_VERSION=02.08.02.61
+ARG BAMBU_VERSION=02.09.01.70
 ARG TARGETARCH
 
 WORKDIR /app
@@ -53,7 +53,7 @@ RUN apt-get update \
 
 RUN echo "Resolving BambuStudio v${BAMBU_VERSION} Ubuntu 22.04 AppImage URL..."; \
 	BAMBU_URL=$(curl -fsSL "https://api.github.com/repos/bambulab/BambuStudio/releases/tags/v${BAMBU_VERSION}" \
-		| grep -oE 'https://[^"]*BambuStudio_ubuntu-?22\.04[^"]*\.AppImage' \
+		| grep -oE 'https://[^"]*BambuStudio_ubu(ntu)?-?22(\.04)?[-_][^"]*\.AppImage' \
 		| head -1); \
 	if [ -z "$BAMBU_URL" ]; then \
 		echo "ERROR: No Ubuntu 22.04 AppImage in BambuStudio v${BAMBU_VERSION}." >&2; \
