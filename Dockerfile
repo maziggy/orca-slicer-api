@@ -8,18 +8,24 @@ WORKDIR /app
 # Download OrcaSlicer based on architecture
 # AMD64: Use official AppImage from SoftFever/OrcaSlicer
 # ARM64: Use custom-built AppImage from kldzj/orca-slicer-arm64
-RUN if [ "$TARGETARCH" = "arm64" ]; then \
+# set -e: a failed download or extraction stops this step instead of
+# surfacing later as missing presets. curl -f: an HTTP error page (GitHub
+# answers 504 at times) is an error, not a file saved as the AppImage.
+RUN set -e; \
+	if [ "$TARGETARCH" = "arm64" ]; then \
 	echo "Downloading ARM64 AppImage from kldzj/orca-slicer-arm64..."; \
-	curl -o orca.AppImage -L "https://github.com/kldzj/orca-slicer-arm64/releases/download/v${ORCA_VERSION}-arm64/OrcaSlicer-${ORCA_VERSION}-arm64-linux.AppImage"; \
-	chmod +x orca.AppImage; \
-	./orca.AppImage --appimage-extract; \
-	rm orca.AppImage; \
+	URL="https://github.com/kldzj/orca-slicer-arm64/releases/download/v${ORCA_VERSION}-arm64/OrcaSlicer-${ORCA_VERSION}-arm64-linux.AppImage"; \
 	else \
 	echo "Downloading AMD64 AppImage from SoftFever/OrcaSlicer..."; \
-	curl -o orca.AppImage -L "https://github.com/SoftFever/OrcaSlicer/releases/download/v${ORCA_VERSION}/OrcaSlicer_Linux_AppImage_Ubuntu2404_V${ORCA_VERSION}.AppImage"; \
+	URL="https://github.com/SoftFever/OrcaSlicer/releases/download/v${ORCA_VERSION}/OrcaSlicer_Linux_AppImage_Ubuntu2404_V${ORCA_VERSION}.AppImage"; \
+	fi; \
+	curl -fL --retry 5 --retry-all-errors --retry-delay 10 -o orca.AppImage "$URL"; \
 	chmod +x orca.AppImage; \
-	./orca.AppImage --appimage-extract; \
+	./orca.AppImage --appimage-extract > /dev/null; \
 	rm orca.AppImage; \
+	if [ ! -f squashfs-root/resources/profiles/BBL.json ] && [ ! -f squashfs-root/resources/profiles/BBL.opc ]; then \
+	echo "ERROR: the extracted AppImage has no resources/profiles/BBL.json or BBL.opc" >&2; \
+	exit 1; \
 	fi
 
 # The profile resolver's JSON tree (OrcaSlicer 2.5.0+ ships binary preset

@@ -31,12 +31,15 @@ ARG TARGETARCH
 
 WORKDIR /app
 
-RUN if [ "$TARGETARCH" = "arm64" ]; then \
+# set -e: a failed download or extraction stops this step instead of
+# surfacing later as a missing slicer. GitHub answers 504 at times.
+RUN set -e; \
+    if [ "$TARGETARCH" = "arm64" ]; then \
         echo "ARM64 not supported — BambuStudio has no official ARM64 AppImage."; \
         exit 1; \
     fi; \
     echo "Resolving BambuStudio v${BAMBU_VERSION} Ubuntu 22.04 AppImage URL..."; \
-    BAMBU_URL=$(curl -fsSL "https://api.github.com/repos/bambulab/BambuStudio/releases/tags/v${BAMBU_VERSION}" \
+    BAMBU_URL=$(curl -fsSL --retry 5 --retry-all-errors --retry-delay 10 "https://api.github.com/repos/bambulab/BambuStudio/releases/tags/v${BAMBU_VERSION}" \
         | grep -oE 'https://[^"]*BambuStudio_ubu(ntu)?-?22(\.04)?[-_][^"]*\.AppImage' \
         | head -1); \
     if [ -z "$BAMBU_URL" ]; then \
@@ -45,10 +48,14 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
         exit 1; \
     fi; \
     echo "Downloading $BAMBU_URL"; \
-    curl -fL -o bambu.AppImage "$BAMBU_URL"; \
+    curl -fL --retry 5 --retry-all-errors --retry-delay 10 -o bambu.AppImage "$BAMBU_URL"; \
     chmod +x bambu.AppImage; \
-    ./bambu.AppImage --appimage-extract; \
-    rm bambu.AppImage
+    ./bambu.AppImage --appimage-extract > /dev/null; \
+    rm bambu.AppImage; \
+    if [ ! -x squashfs-root/AppRun ]; then \
+        echo "ERROR: the extracted AppImage has no AppRun" >&2; \
+        exit 1; \
+    fi
 
 COPY package*.json ./
 RUN npm ci
