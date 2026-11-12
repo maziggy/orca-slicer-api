@@ -63,7 +63,8 @@ RUN echo "Resolving BambuStudio v${BAMBU_VERSION} Ubuntu 22.04 AppImage URL...";
 	curl -fL -o bambu.AppImage "$BAMBU_URL"; \
 	chmod +x bambu.AppImage; \
 	./bambu.AppImage --appimage-extract; \
-	rm bambu.AppImage
+	rm bambu.AppImage; \
+	chmod -R a+rX squashfs-root
 
 COPY package*.json ./
 

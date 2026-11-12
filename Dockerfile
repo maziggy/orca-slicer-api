@@ -12,6 +12,9 @@ WORKDIR /app
 # surfacing later as missing presets. curl -f: an HTTP error page is an
 # error, not a file saved as the AppImage. GitHub's release downloads answer
 # 504 at times, for minutes; the retries ride that out.
+# The AppImages since OrcaSlicer 2.5.0 / BambuStudio 02.09 unpack with 700
+# directories; chmod opens them so the image also runs as a non-root user
+# (bambuddy#3524), and the check stops a build that would not.
 RUN set -e; \
 	if [ "$TARGETARCH" = "arm64" ]; then \
 	echo "Downloading ARM64 AppImage from kldzj/orca-slicer-arm64..."; \
@@ -24,6 +27,11 @@ RUN set -e; \
 	chmod +x orca.AppImage; \
 	./orca.AppImage --appimage-extract > /dev/null; \
 	rm orca.AppImage; \
+	chmod -R a+rX squashfs-root; \
+	if [ -n "$(find squashfs-root -type d ! -perm -o=rx)" ]; then \
+	echo "ERROR: squashfs-root has directories other users cannot enter" >&2; \
+	exit 1; \
+	fi; \
 	if [ ! -f squashfs-root/resources/profiles/BBL.json ] && [ ! -f squashfs-root/resources/profiles/BBL.opc ]; then \
 	echo "ERROR: the extracted AppImage has no resources/profiles/BBL.json or BBL.opc" >&2; \
 	exit 1; \

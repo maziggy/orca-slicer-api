@@ -34,6 +34,9 @@ WORKDIR /app
 # set -e: a failed download or extraction stops this step instead of
 # surfacing later as a missing slicer. GitHub's release downloads answer
 # 504 at times, for minutes; the retries ride that out.
+# The AppImages since OrcaSlicer 2.5.0 / BambuStudio 02.09 unpack with 700
+# directories; chmod opens them so the image also runs as a non-root user
+# (bambuddy#3524), and the check stops a build that would not.
 RUN set -e; \
     if [ "$TARGETARCH" = "arm64" ]; then \
         echo "ARM64 not supported — BambuStudio has no official ARM64 AppImage."; \
@@ -53,6 +56,11 @@ RUN set -e; \
     chmod +x bambu.AppImage; \
     ./bambu.AppImage --appimage-extract > /dev/null; \
     rm bambu.AppImage; \
+    chmod -R a+rX squashfs-root; \
+    if [ -n "$(find squashfs-root -type d ! -perm -o=rx)" ]; then \
+        echo "ERROR: squashfs-root has directories other users cannot enter" >&2; \
+        exit 1; \
+    fi; \
     if [ ! -x squashfs-root/AppRun ]; then \
         echo "ERROR: the extracted AppImage has no AppRun" >&2; \
         exit 1; \

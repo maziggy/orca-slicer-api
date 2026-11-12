@@ -25,7 +25,8 @@ RUN echo "Downloading AMD64 AppImage from SoftFever/OrcaSlicer..."; \
 	curl -o orca.AppImage -L "https://github.com/SoftFever/OrcaSlicer/releases/download/v${ORCA_VERSION}/OrcaSlicer_Linux_AppImage_Ubuntu2404_V${ORCA_VERSION}.AppImage"; \
 	chmod +x orca.AppImage; \
 	./orca.AppImage --appimage-extract; \
-	rm orca.AppImage; 
+	rm orca.AppImage; \
+	chmod -R a+rX squashfs-root
 
 COPY scripts/fetch-bundled-profiles.sh /tmp/
 RUN /tmp/fetch-bundled-profiles.sh /app/squashfs-root "${ORCA_VERSION}" /app/bundled-profiles
