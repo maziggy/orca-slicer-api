@@ -100,6 +100,8 @@ for flavor in "${TARGETS[@]}"; do
     echo -e "${BLUE}  image: ${image}${NC}"
     echo -e "${BLUE}========================================${NC}"
 
+    # vitest comes from the mounted tree's node_modules (run "npm ci" first),
+    # and starts with node: the sidecar images ship neither npm nor npx.
     # DATA_PATH and the scratch dirs live inside the container so a run never
     # writes into the working tree. ORCASLICER_PATH is the slicer-agnostic var
     # the wrapper reads; in the BambuStudio image it points at BambuStudio.
@@ -113,8 +115,8 @@ for flavor in "${TARGETS[@]}"; do
         -e SLICER_FLAVOR="$flavor" \
         -e NPM_CONFIG_UPDATE_NOTIFIER=false \
         -e NPM_CONFIG_FUND=false \
-        --entrypoint npx \
-        "$image" vitest run tests/e2e "${VITEST_ARGS[@]}"; then
+        --entrypoint node \
+        "$image" node_modules/vitest/vitest.mjs run tests/e2e "${VITEST_ARGS[@]}"; then
         echo -e "${GREEN}e2e ${flavor}: passed${NC}"
     else
         echo -e "${RED}e2e ${flavor}: FAILED${NC}"

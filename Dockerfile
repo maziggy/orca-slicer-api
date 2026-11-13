@@ -50,8 +50,16 @@ COPY . .
 
 RUN npm run build
 
+# The runtime stage copies node_modules as it is, so drop the build, lint
+# and test toolchain (tsc, eslint, vitest, vite) first: the API runs on the
+# production dependencies alone (bambuddy#3530).
+RUN npm prune --omit=dev
+
 FROM ubuntu:24.04
 
+# NodeSource's nodejs package bundles npm and corepack. The image runs only
+# "node app/dist/index.js", so they come out: less to scan and to patch
+# (bambuddy#3530). test_e2e.sh starts vitest with node for the same reason.
 RUN apt-get update \
 	&& apt-get upgrade -y \
 	&& apt-get install -y --no-install-recommends \
@@ -68,6 +76,8 @@ RUN apt-get update \
 	libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 \
 	libwebkit2gtk-4.1-0 \
 	&& update-ca-certificates \
+	&& rm -rf /usr/lib/node_modules/npm /usr/lib/node_modules/corepack \
+		/usr/bin/npm /usr/bin/npx /usr/bin/corepack \
 	&& rm -rf /var/lib/apt/lists/*
 
 
