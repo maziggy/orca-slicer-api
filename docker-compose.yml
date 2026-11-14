@@ -16,6 +16,10 @@
 #
 # Override the host ports via environment if you need to:
 #   ORCA_API_PORT=3303 BAMBU_API_PORT=3301 docker compose up -d
+#
+# The ports are published on all interfaces unless SIDECAR_BIND names an
+# address. The API has no login: when Bambuddy runs on this host with
+# network_mode: host, SIDECAR_BIND=127.0.0.1 keeps the sidecars off the LAN.
 
 services:
   orca-slicer-api:
@@ -41,7 +45,7 @@ services:
     container_name: orca-slicer-api
     restart: unless-stopped
     ports:
-      - "${ORCA_API_PORT:-3003}:3000"
+      - "${SIDECAR_BIND:+${SIDECAR_BIND}:}${ORCA_API_PORT:-3003}:3000"
     volumes:
       - ./data/orca:/app/data
     environment:
@@ -73,7 +77,7 @@ services:
     container_name: bambu-studio-api
     restart: unless-stopped
     ports:
-      - "${BAMBU_API_PORT:-3001}:3000"
+      - "${SIDECAR_BIND:+${SIDECAR_BIND}:}${BAMBU_API_PORT:-3001}:3000"
     volumes:
       - ./data/bambu:/app/data
     environment:

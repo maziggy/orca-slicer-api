@@ -48,7 +48,14 @@ function bundlesRoot(): string {
   return join(dataRoot(), BUNDLES_DIR);
 }
 
+// Bundle ids are always computeBundleId output. Anything else is refused
+// before it is used as a path.
+const BUNDLE_ID_RE = /^[0-9a-f]{16}$/;
+
 function bundleDir(id: string): string {
+  if (!BUNDLE_ID_RE.test(id)) {
+    throw new AppError(400, "Invalid bundle id");
+  }
   return join(bundlesRoot(), id);
 }
 
@@ -162,9 +169,10 @@ export async function importBundle(zip: Buffer): Promise<BundleSummary> {
 // every import + list call (rather than caching) keeps the on-disk store
 // authoritative — a user clearing /data/bundles/ recovers cleanly.
 export async function readBundleSummary(id: string): Promise<BundleSummary> {
+  const dir = bundleDir(id);
   let raw: string;
   try {
-    raw = await fs.readFile(join(bundleDir(id), MANIFEST_FILENAME), "utf-8");
+    raw = await fs.readFile(join(dir, MANIFEST_FILENAME), "utf-8");
   } catch {
     throw new AppError(404, `Bundle "${id}" not found`);
   }

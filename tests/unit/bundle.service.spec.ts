@@ -275,3 +275,80 @@ describe("resolveBundlePresetPath", () => {
     ).rejects.toMatchObject({ status: 404 });
   });
 });
+
+describe("bundle id check", () => {
+  // Ids that are not computeBundleId output, including ones that would leave
+  // the bundles directory if joined into a path.
+  const BAD_IDS = [
+    "../../../tmp/victim",
+    "..",
+    "../0123456789abcdef",
+    "/etc",
+    "0123456789abcdef/..",
+    "0123456789ABCDEF",
+    "0123456789abcde",
+    "0123456789abcdef0",
+    "",
+  ];
+
+  it.each(BAD_IDS)("bundleDir refuses %j with 400", (id) => {
+    expect(() => __test__.bundleDir(id)).toThrow(AppError);
+    try {
+      __test__.bundleDir(id);
+    } catch (err) {
+      expect(err).toMatchObject({ status: 400 });
+    }
+  });
+
+  it("bundleDir accepts a computeBundleId id", () => {
+    const id = computeBundleId(Buffer.from("x"));
+    expect(__test__.bundleDir(id)).toBe(path.join(__test__.bundlesRoot(), id));
+  });
+
+  it("deleteBundle leaves a directory outside the bundle store alone", async () => {
+    const outside = path.join(scratchRoot, "outside", "sub");
+    await fs.mkdir(outside, { recursive: true });
+    await fs.mkdir(__test__.bundlesRoot(), { recursive: true });
+
+    await expect(deleteBundle("../outside")).rejects.toMatchObject({
+      status: 400,
+    });
+    await expect(fs.stat(outside)).resolves.toBeTruthy();
+  });
+
+  it("readBundleSummary refuses an id outside the store with 400, not 404", async () => {
+    const outside = path.join(scratchRoot, "outside");
+    await fs.mkdir(outside, { recursive: true });
+    await fs.writeFile(path.join(outside, "bundle_structure.json"), "{}");
+
+    await expect(readBundleSummary("../outside")).rejects.toMatchObject({
+      status: 400,
+    });
+  });
+
+  it("resolveBundlePresetPath refuses an id outside the store", async () => {
+    const outside = path.join(scratchRoot, "outside", "printer");
+    await fs.mkdir(outside, { recursive: true });
+    await fs.writeFile(path.join(outside, "p.json"), "{}");
+
+    await expect(
+      resolveBundlePresetPath("../outside", "printer", "p"),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  // readBundleSummary refuses the stray entry, and listBundles skips entries
+  // it cannot read.
+  it("listBundles skips entries that are not bundle ids", async () => {
+    const zip = await fs.readFile(FIXTURE);
+    const summary = await importBundle(zip);
+    const stray = path.join(__test__.bundlesRoot(), "not-a-bundle");
+    await fs.mkdir(stray, { recursive: true });
+    await fs.copyFile(
+      path.join(__test__.bundlesRoot(), summary.id, "bundle_structure.json"),
+      path.join(stray, "bundle_structure.json"),
+    );
+
+    const ids = (await listBundles()).map((b) => b.id);
+    expect(ids).toEqual([summary.id]);
+  });
+});
